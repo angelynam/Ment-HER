@@ -420,16 +420,17 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
 const CAREER_STAGES = ["Freshman", "Sophomore", "Junior", "Senior", "Grad Student", "Recent Grad", "Early Career", "Professional"];
 const CAREER_INTERESTS = ["SWE", "Product", "Finance", "Data", "Consulting", "Marketing", "Design", "Operations"];
 
-function OnboardingScreen({ onDone }: { onDone: (name: string, school: string) => void }) {
+function OnboardingScreen({ onDone }: { onDone: (name: string, school: string, email: string) => void }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [school, setSchool] = useState("");
+  const [email, setEmail] = useState("");
   const [stage, setStage] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
 
   const titles = ["About you", "Career stage", "Your interests", "Target milestones"];
-  const canNext = [name.trim() && school.trim(), !!stage, interests.length > 0, picked.length > 0][step];
+  const canNext = [name.trim() && school.trim() && email.includes("@"), !!stage, interests.length > 0, picked.length > 0][step];
 
   function toggleInterest(v: string) {
     setInterests(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
@@ -473,12 +474,14 @@ function OnboardingScreen({ onDone }: { onDone: (name: string, school: string) =
             {step === 0 && (
               <div className="space-y-4 pt-4">
                 {[
-                  { label: "Your name", value: name, set: setName, placeholder: "First name" },
-                  { label: "School or workplace", value: school, set: setSchool, placeholder: "e.g. Michigan, Deloitte, Self-employed" },
-                ].map(({ label, value, set, placeholder }) => (
+                  { label: "Your name", value: name, set: setName, placeholder: "First name", type: "text" },
+                  { label: "School or workplace", value: school, set: setSchool, placeholder: "e.g. Michigan, Deloitte, Self-employed", type: "text" },
+                  { label: "School or work email", value: email, set: setEmail, placeholder: "you@university.edu", type: "email" },
+                ].map(({ label, value, set, placeholder, type }) => (
                   <div key={label}>
                     <label className="text-sm font-semibold block mb-1.5" style={{ color: "#241C34" }}>{label}</label>
                     <input
+                      type={type}
                       value={value}
                       onChange={e => set(e.target.value)}
                       placeholder={placeholder}
@@ -493,6 +496,9 @@ function OnboardingScreen({ onDone }: { onDone: (name: string, school: string) =
                     />
                   </div>
                 ))}
+                <p className="text-xs px-1" style={{ color: "#B0A5BE", fontFamily: "Inter, sans-serif" }}>
+                  We'll use this to verify you're a current student or employee.
+                </p>
                 <div className="p-4 rounded-2xl flex items-start gap-3 mt-1" style={{ background: "#F3F0FF" }}>
                   <Sparkles size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#7C3AED" }} />
                   <p className="text-sm leading-relaxed" style={{ color: "#6B4FA8", fontFamily: "Inter, sans-serif" }}>
@@ -577,7 +583,7 @@ function OnboardingScreen({ onDone }: { onDone: (name: string, school: string) =
       {/* Footer */}
       <div className="px-6 pb-10 pt-3">
         <button
-          onClick={() => step < 3 ? setStep(s => s + 1) : onDone(name, school)}
+          onClick={() => step < 3 ? setStep(s => s + 1) : onDone(name, school, email)}
           disabled={!canNext}
           className="w-full py-4 rounded-2xl font-bold text-[16px] flex items-center justify-center gap-2 transition-all"
           style={{
@@ -1231,9 +1237,9 @@ function AppShell({ name, school }: { name: string; school: string }) {
   const [tab, setTab] = useState<Tab>("dashboard");
 
   const tabs: { id: Tab; label: string; icon: (active: boolean) => React.ReactNode }[] = [
+    { id: "match", label: "Match", icon: (a) => <Heart size={21} fill={a ? "#7C3AED" : "none"} style={{ color: a ? "#7C3AED" : "#C4B5FD" }} /> },
     { id: "dashboard", label: "Home", icon: (a) => <Home size={21} style={{ color: a ? "#7C3AED" : "#C4B5FD" }} /> },
     { id: "milestones", label: "Milestones", icon: (a) => <BookOpen size={21} style={{ color: a ? "#7C3AED" : "#C4B5FD" }} /> },
-    { id: "match", label: "Match", icon: (a) => <Heart size={21} fill={a ? "#7C3AED" : "none"} style={{ color: a ? "#7C3AED" : "#C4B5FD" }} /> },
     { id: "profile", label: "Profile", icon: (a) => <User size={21} style={{ color: a ? "#7C3AED" : "#C4B5FD" }} /> },
   ];
 
@@ -1300,14 +1306,14 @@ function AppShell({ name, school }: { name: string; school: string }) {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("landing");
-  const [user, setUser] = useState({ name: "", school: "" });
+  const [user, setUser] = useState({ name: "", school: "", email: "" });
 
   return (
     <>
       {screen === "landing" && <LandingScreen onStart={() => setScreen("onboarding")} />}
       {screen === "onboarding" && (
         <OnboardingScreen
-          onDone={(n, s) => { setUser({ name: n, school: s }); setScreen("app"); }}
+          onDone={(n, s, e) => { setUser({ name: n, school: s, email: e }); setScreen("app"); }}
         />
       )}
       {screen === "app" && <AppShell name={user.name} school={user.school} />}
